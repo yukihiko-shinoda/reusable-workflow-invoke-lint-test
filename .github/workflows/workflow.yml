@@ -20,6 +20,14 @@ on:
         description: Shell command run on Windows runners after checkout and before uv, e.g. to install system tools like ffmpeg. Runs in PowerShell. Empty means skipped.
         type: string
         default: ''
+      post-sync-command-linux:
+        description: Shell command run on Linux runners after `uv sync` and before the test step, with the project venv and its console scripts available, e.g. `uv run <project-cli> install`. Runs in bash. Empty means skipped.
+        type: string
+        default: ''
+      post-sync-command-windows:
+        description: Shell command run on Windows runners after `uv sync` and before the test step, with the project venv and its console scripts available. Runs in PowerShell. Empty means skipped.
+        type: string
+        default: ''
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -44,6 +52,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync
+      - if: runner.os == 'Linux' && inputs.post-sync-command-linux != ''
+        run: ${{ inputs.post-sync-command-linux }}
+      - if: runner.os == 'Windows' && inputs.post-sync-command-windows != ''
+        run: ${{ inputs.post-sync-command-windows }}
       # Invoke currently seems not support PowerShell,
       # production code of this package doesn't depends on cmd, however test depends on cmd.
       # - GitHub Actions default shell on Windows runners is changing to PowerShell | GitHub Changelog
@@ -76,4 +88,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: curl -LsSf https://astral.sh/uv/install.sh | sh
       - run: uv sync --python ${{ matrix.python-version }}
+      - if: inputs.post-sync-command-linux != ''
+        run: ${{ inputs.post-sync-command-linux }}
       - run: uv run invoke test.all
