@@ -8,6 +8,14 @@ on:
       is-supporting-python-3-7-in-linux:
         type: boolean
         default: false
+      setup-command-linux:
+        description: Shell command run on Linux runners after checkout and before uv, e.g. to install system tools like ffmpeg. Runs in bash. Empty means skipped.
+        type: string
+        default: ''
+      setup-command-windows:
+        description: Shell command run on Windows runners after checkout and before uv, e.g. to install system tools like ffmpeg. Runs in PowerShell. Empty means skipped.
+        type: string
+        default: ''
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -20,6 +28,14 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v7
+      # Caller-supplied hook to install system tools (e.g. ffmpeg) that tests depend on.
+      # Runs before uv so that native builds during `uv sync` can also use the installed tools.
+      # Interpolating the input into `run:` is intentional: the calling workflow author is the
+      # same party who could write this step in their own repository, so no trust boundary is crossed.
+      - if: runner.os == 'Linux' && inputs.setup-command-linux != ''
+        run: ${{ inputs.setup-command-linux }}
+      - if: runner.os == 'Windows' && inputs.setup-command-windows != ''
+        run: ${{ inputs.setup-command-windows }}
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
@@ -45,6 +61,9 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v7
+      # Same caller-supplied Linux setup hook as the main `test` job (this job is Linux-only).
+      - if: inputs.setup-command-linux != ''
+        run: ${{ inputs.setup-command-linux }}
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}

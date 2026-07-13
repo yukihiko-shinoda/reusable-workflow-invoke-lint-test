@@ -11,6 +11,7 @@ Testing Python packages across multiple versions and OSes requires per-repo boil
 - **Cross-platform coverage out of the box** — matrix across Ubuntu and Windows with a single call.
 - **Invoke on Windows just works** — forces `cmd` shell automatically, because Invoke does not support PowerShell.
 - **Python 3.7 legacy support when you need it** — opt-in job on Ubuntu 22.04 that falls back from `setup-uv` to `actions/setup-python` + the uv shell installer, working around uv's limited 3.7 support.
+- **System-tool installation hook** — optional `setup-command-linux` / `setup-command-windows` inputs run a caller-supplied command (e.g. installing `ffmpeg`) on each runner before tests, so suites that shell out to CLI tools work without forking the workflow.
 
 ## Quickstart
 
@@ -47,6 +48,21 @@ jobs:
       support-python-versions: "[ '3.13', '3.12', '3.11' ]"
 ```
 
+### How do I install system tools my tests depend on (e.g. ffmpeg)?
+
+Pass an install command per OS via `setup-command-linux` and `setup-command-windows`. Each runs right after checkout and before `uv sync`, only when non-empty:
+
+```yaml
+jobs:
+  call:
+    uses: yukihiko-shinoda/reusable-workflow-invoke-lint-test/.github/workflows/workflow.yml@v1
+    with:
+      setup-command-linux: sudo apt-get update && sudo apt-get install -y ffmpeg
+      setup-command-windows: choco install ffmpeg -y
+```
+
+`setup-command-linux` runs in bash; `setup-command-windows` runs in PowerShell (the runners' default shells). When the Python 3.7 legacy job is enabled, it runs `setup-command-linux` too.
+
 ### How do I enable the Python 3.7 legacy job?
 
 Set `is-supporting-python-3-7-in-linux: true`:
@@ -69,6 +85,8 @@ This adds a separate job on `ubuntu-22.04` that installs uv via the shell script
 | --- | --- | --- | --- |
 | `support-python-versions` | `string` | `"[ '3.14', '3.13', '3.12', '3.11', '3.10' ]"` | JSON array of Python versions for the main matrix |
 | `is-supporting-python-3-7-in-linux` | `boolean` | `false` | When `true`, enables an additional job on Ubuntu 22.04 for Python 3.7 |
+| `setup-command-linux` | `string` | `''` | Command run on Linux runners (bash) after checkout, before uv — for installing system tools like `ffmpeg`. Empty = skipped. Also runs in the Python 3.7 legacy job. |
+| `setup-command-windows` | `string` | `''` | Command run on Windows runners (PowerShell) after checkout, before uv — for installing system tools like `ffmpeg`. Empty = skipped. |
 
 ### Jobs
 
