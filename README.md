@@ -8,7 +8,7 @@ Reusable GitHub Actions workflow for testing Python packages that use [`uv`](htt
 
 Testing Python packages across multiple versions and OSes requires per-repo boilerplate that drifts over time. This workflow centralises that logic for projects already using `Invoke Lint` so callers get:
 
-- **Cross-platform coverage out of the box** — matrix across Ubuntu and Windows with a single call.
+- **Cross-platform coverage out of the box** — matrix across Ubuntu and Windows with a single call, trimmable via `support-os` (e.g. Linux-only projects can skip Windows).
 - **Invoke on Windows just works** — forces `cmd` shell automatically, because Invoke does not support PowerShell.
 - **Python 3.7 legacy support when you need it** — opt-in job on Ubuntu 22.04 that falls back from `setup-uv` to `actions/setup-python` + the uv shell installer, working around uv's limited 3.7 support.
 - **System-tool installation hook** — optional `setup-command-linux` / `setup-command-windows` inputs run a caller-supplied command (e.g. installing `ffmpeg`) on each runner before tests, so suites that shell out to CLI tools work without forking the workflow.
@@ -48,6 +48,20 @@ jobs:
       support-python-versions: "[ '3.13', '3.12', '3.11' ]"
 ```
 
+### How do I choose which OSs to test on?
+
+Pass a JSON array string of runner labels to `support-os`:
+
+```yaml
+jobs:
+  call:
+    uses: yukihiko-shinoda/reusable-workflow-invoke-lint-test/.github/workflows/workflow.yml@v1
+    with:
+      support-os: "[ 'ubuntu-latest' ]"
+```
+
+The default is `"[ 'ubuntu-latest', 'windows-latest' ]"`. Ubuntu and Windows runner labels are the supported values; other runners (e.g. `macos-latest`) will run the tests in the runner's default shell but are untested and are not covered by the `setup-command-*` hooks.
+
 ### How do I install system tools my tests depend on (e.g. ffmpeg)?
 
 Pass an install command per OS via `setup-command-linux` and `setup-command-windows`. Each runs right after checkout and before `uv sync`, only when non-empty:
@@ -84,6 +98,7 @@ This adds a separate job on `ubuntu-22.04` that installs uv via the shell script
 | Input | Type | Default | Description |
 | --- | --- | --- | --- |
 | `support-python-versions` | `string` | `"[ '3.14', '3.13', '3.12', '3.11', '3.10' ]"` | JSON array of Python versions for the main matrix |
+| `support-os` | `string` | `"[ 'ubuntu-latest', 'windows-latest' ]"` | JSON array of runner labels for the main matrix. Ubuntu and Windows labels are supported; other runners run tests in their default shell but are untested. |
 | `is-supporting-python-3-7-in-linux` | `boolean` | `false` | When `true`, enables an additional job on Ubuntu 22.04 for Python 3.7 |
 | `setup-command-linux` | `string` | `''` | Command run on Linux runners (bash) after checkout, before uv — for installing system tools like `ffmpeg`. Empty = skipped. Also runs in the Python 3.7 legacy job. |
 | `setup-command-windows` | `string` | `''` | Command run on Windows runners (PowerShell) after checkout, before uv — for installing system tools like `ffmpeg`. Empty = skipped. |
@@ -92,5 +107,5 @@ This adds a separate job on `ubuntu-22.04` that installs uv via the shell script
 
 | Job | Runner | Condition |
 | --- | --- | --- |
-| `test` | `ubuntu-latest`, `windows-latest` × each version in `support-python-versions` | Always |
-| `test_legacy_linux` | `ubuntu-22.04` with Python 3.7 | Only when `is-supporting-python-3-7-in-linux: true` |
+| `test` | each runner in `support-os` × each version in `support-python-versions` (defaults: `ubuntu-latest`, `windows-latest`) | Always |
+| `test_legacy_linux` | `ubuntu-22.04` with Python 3.7 (not affected by `support-os`) | Only when `is-supporting-python-3-7-in-linux: true` |
