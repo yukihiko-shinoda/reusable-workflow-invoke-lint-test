@@ -83,7 +83,7 @@ jobs:
       # Same caller-supplied Linux setup hook as the main `test` job (this job is Linux-only).
       - if: inputs.setup-command-linux != ''
         run: ${{ inputs.setup-command-linux }}
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - run: curl -LsSf https://astral.sh/uv/install.sh | sh
