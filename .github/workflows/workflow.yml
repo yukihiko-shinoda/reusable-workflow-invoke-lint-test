@@ -39,7 +39,7 @@ jobs:
         python-version: ${{ fromJSON(inputs.support-python-versions) }}
       fail-fast: false
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       # Caller-supplied hook to install system tools (e.g. ffmpeg) that tests depend on.
       # Runs before uv so that native builds during `uv sync` can also use the installed tools.
       # Interpolating the input into `run:` is intentional: the calling workflow author is the
@@ -48,7 +48,7 @@ jobs:
         run: ${{ inputs.setup-command-linux }}
       - if: runner.os == 'Windows' && inputs.setup-command-windows != ''
         run: ${{ inputs.setup-command-windows }}
-      - uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync
@@ -79,11 +79,11 @@ jobs:
         python-version: [ '3.7' ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       # Same caller-supplied Linux setup hook as the main `test` job (this job is Linux-only).
       - if: inputs.setup-command-linux != ''
         run: ${{ inputs.setup-command-linux }}
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v6.3.0
         with:
           python-version: ${{ matrix.python-version }}
       - run: curl -LsSf https://astral.sh/uv/install.sh | sh
